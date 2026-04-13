@@ -34,97 +34,9 @@ import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-
-const API_BASE = "https://azaad-backend-api-production.up.railway.app";
-const DEFAULT_API_KEY = "123456";
-
-const STORAGE_KEYS = {
-  theme: "azaad_theme",
-  apiKey: "azaad_api_key",
-  favorites: "azaad_favorites",
-  recent: "azaad_recent",
-  playlists: "azaad_playlists",
-  volume: "azaad_volume",
-  autoplay: "azaad_autoplay",
-};
-
-const defaultCover =
-  "https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/Background.jpg";
-
-function readStorage(key, fallback) {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeStorage(key, value) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
-}
-
-function formatTime(seconds) {
-  if (!Number.isFinite(seconds)) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${m}:${s}`;
-}
-
-function normalizeSong(raw, index) {
-  const absoluteUrl = (path) => {
-    if (!path) return "";
-    if (/^https?:\/\//i.test(path)) return path;
-    return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
-  };
-
-  return {
-    id: String(raw.id || raw._id || raw.slug || `song-${index}`),
-    title: raw.title || raw.songTitle || raw.name || raw.metadata?.title || "Untitled Track",
-    artist: raw.artist || raw.artistName || raw.singer || raw.singers || raw.metadata?.artist || "Unknown Artist",
-    album: raw.album || raw.category || raw.metadata?.album || "Azaad Collection",
-    vibe: raw.vibe || raw.genre || raw.type || "Featured",
-    duration: Number(raw.duration || 0),
-    featured: Boolean(raw.featured),
-    trending: Boolean(raw.trending),
-    audioUrl: absoluteUrl(raw.audioUrl || raw.audio || raw.songUrl || raw.fileUrl || raw.url),
-    coverUrl: absoluteUrl(raw.coverUrl || raw.cover || raw.imageUrl || raw.thumbnail || raw.coverImage) || defaultCover,
-  };
-}
-
-function createPlaylist(name) {
-  return {
-    id: `pl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name,
-    songIds: [],
-    createdAt: new Date().toISOString(),
-  };
-}
-
-function normalizePlaylist(raw, index) {
-  const fallback = createPlaylist(`My Playlist ${index + 1}`);
-  if (!raw || typeof raw !== "object") return fallback;
-  return {
-    id: String(raw.id || fallback.id),
-    name: String(raw.name || fallback.name),
-    songIds: Array.isArray(raw.songIds) ? raw.songIds.map(String) : [],
-    createdAt:
-      typeof raw.createdAt === "string" && !Number.isNaN(Date.parse(raw.createdAt))
-        ? raw.createdAt
-        : fallback.createdAt,
-  };
-}
-
-function ensurePlaylists(playlists) {
-  if (!Array.isArray(playlists) || playlists.length === 0) {
-    return [createPlaylist("My Playlist")];
-  }
-  return playlists.map(normalizePlaylist);
-}
+import { API_BASE, DEFAULT_API_KEY } from "@/config/api";
+import { STORAGE_KEYS, readStorage, writeStorage } from "@/lib/storage";
+import { DEFAULT_COVER, createPlaylist, ensurePlaylists, formatTime, normalizeSong } from "@/lib/music";
 
 function LogoPulse() {
   return (
@@ -236,7 +148,7 @@ export default function AzaadPremiumFrontend() {
         }
         const data = await res.json();
         const rawSongs = Array.isArray(data) ? data : data.songs || data.data || [];
-        const normalized = rawSongs.map(normalizeSong).filter((song) => song.audioUrl);
+        const normalized = rawSongs.map((song, index) => normalizeSong(song, index, API_BASE)).filter((song) => song.audioUrl);
         if (!ignore) {
           setSongs(normalized);
           if (!currentSongId && normalized.length) {
@@ -257,7 +169,7 @@ export default function AzaadPremiumFrontend() {
               featured: true,
               trending: true,
               audioUrl: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3",
-              coverUrl: defaultCover,
+              coverUrl: DEFAULT_COVER,
             },
             {
               id: "demo-2",
@@ -775,7 +687,7 @@ export default function AzaadPremiumFrontend() {
                           </div>
                         </div>
                         <motion.div animate={isPlaying ? { rotate: 360 } : { rotate: 0 }} transition={isPlaying ? { duration: 12, repeat: Infinity, ease: "linear" } : { duration: 0.4 }} className="mx-auto h-48 w-48 overflow-hidden rounded-full border border-white/10 bg-black p-3 shadow-2xl shadow-emerald-950/30">
-                          <img src={currentSong?.coverUrl || defaultCover} alt="Now playing" className="h-full w-full rounded-full object-cover" />
+                          <img src={currentSong?.coverUrl || DEFAULT_COVER} alt="Now playing" className="h-full w-full rounded-full object-cover" />
                         </motion.div>
                       </div>
                     </CardContent>
@@ -1005,7 +917,7 @@ export default function AzaadPremiumFrontend() {
                     <Card key={artist.name} className="rounded-[24px] border-white/10 bg-white/[0.04] text-white">
                       <CardContent className="space-y-4 p-5">
                         <div className="flex items-center gap-3">
-                          <img src={artist.coverUrl || defaultCover} alt={artist.name} className="h-14 w-14 rounded-2xl object-cover" />
+                          <img src={artist.coverUrl || DEFAULT_COVER} alt={artist.name} className="h-14 w-14 rounded-2xl object-cover" />
                           <div className="min-w-0">
                             <div className="truncate text-lg font-semibold">{artist.name}</div>
                             <div className="text-xs text-zinc-400">
@@ -1131,7 +1043,7 @@ export default function AzaadPremiumFrontend() {
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/75 px-3 py-3 backdrop-blur-2xl sm:px-4 md:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3 lg:w-[28%]">
-            <img src={currentSong?.coverUrl || defaultCover} alt={currentSong?.title || "No track"} className={`h-14 w-14 rounded-2xl object-cover shadow-xl ${isPlaying ? "ring-2 ring-emerald-400/40" : ""}`} />
+            <img src={currentSong?.coverUrl || DEFAULT_COVER} alt={currentSong?.title || "No track"} className={`h-14 w-14 rounded-2xl object-cover shadow-xl ${isPlaying ? "ring-2 ring-emerald-400/40" : ""}`} />
             <div className="min-w-0">
               <div className="truncate font-semibold text-white">{currentSong?.title || "Nothing playing"}</div>
               <div className="truncate text-sm text-zinc-400">{currentSong?.artist || "Choose a track from the catalog"}</div>

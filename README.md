@@ -6,8 +6,16 @@ Azaad premium music frontend, configured for Vercel deployment with Vite + React
 
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
+
+### Environment variables
+
+- `VITE_API_BASE_URL`: Backend base URL used by song fetch requests.
+- `VITE_API_KEY`: Optional API key sent as `x-api-key` header.
+
+> Security note: avoid hardcoding production API keys in frontend source files.
 
 ## Production build
 
