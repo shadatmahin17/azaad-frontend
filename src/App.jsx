@@ -658,17 +658,19 @@ export default function AzaadPremiumFrontend() {
                   className="w-full sm:w-40 rounded-2xl border-white/10 bg-white/5 text-white"
                   placeholder="API key"
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-                  className="rounded-2xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-                <Button onClick={() => setQueueOpen(true)} className="rounded-2xl bg-emerald-400 text-black hover:bg-emerald-300">
-                  <ListMusic className="mr-2 h-4 w-4" /> Queue
-                </Button>
+                <div className="ml-auto flex shrink-0 items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+                    className="shrink-0 rounded-2xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  >
+                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </Button>
+                  <Button onClick={() => setQueueOpen(true)} className="shrink-0 rounded-2xl bg-emerald-400 px-4 text-black hover:bg-emerald-300">
+                    <ListMusic className="mr-2 h-4 w-4" /> Queue
+                  </Button>
+                </div>
               </div>
             </div>
           </header>
