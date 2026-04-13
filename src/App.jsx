@@ -45,6 +45,7 @@ const STORAGE_KEYS = {
   recent: "azaad_recent",
   playlists: "azaad_playlists",
   volume: "azaad_volume",
+  autoplay: "azaad_autoplay",
 };
 
 const defaultCover =
@@ -168,6 +169,7 @@ export default function AzaadPremiumFrontend() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [queueOpen, setQueueOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("My Playlist");
+  const [autoplay, setAutoplay] = useState(true);
 
   useEffect(() => {
     const storedTheme = readStorage(STORAGE_KEYS.theme, "dark");
@@ -176,6 +178,7 @@ export default function AzaadPremiumFrontend() {
     const storedRecent = readStorage(STORAGE_KEYS.recent, []);
     const storedPlaylists = ensurePlaylists(readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")]));
     const storedVolume = readStorage(STORAGE_KEYS.volume, 0.8);
+    const storedAutoplay = readStorage(STORAGE_KEYS.autoplay, true);
 
     setTheme(storedTheme);
     setApiKey(storedApiKey);
@@ -183,6 +186,7 @@ export default function AzaadPremiumFrontend() {
     setRecent(storedRecent);
     setPlaylists(storedPlaylists);
     setVolume(storedVolume);
+    setAutoplay(storedAutoplay);
   }, []);
 
   useEffect(() => writeStorage(STORAGE_KEYS.theme, theme), [theme]);
@@ -191,6 +195,7 @@ export default function AzaadPremiumFrontend() {
   useEffect(() => writeStorage(STORAGE_KEYS.recent, recent), [recent]);
   useEffect(() => writeStorage(STORAGE_KEYS.playlists, ensurePlaylists(playlists)), [playlists]);
   useEffect(() => writeStorage(STORAGE_KEYS.volume, volume), [volume]);
+  useEffect(() => writeStorage(STORAGE_KEYS.autoplay, autoplay), [autoplay]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -301,6 +306,30 @@ export default function AzaadPremiumFrontend() {
     return base;
   }, [filteredSongs, songs, query]);
 
+  const autoplaySuggestions = useMemo(() => {
+    if (!songs.length) return [];
+    const recentSet = new Set(recent.slice(0, 6));
+    const favoriteSet = new Set(favorites);
+    const currentArtist = currentSong?.artist?.toLowerCase() || "";
+    const currentVibe = currentSong?.vibe?.toLowerCase() || "";
+
+    return songs
+      .filter((song) => song.id !== currentSongId)
+      .map((song) => {
+        let score = 0;
+        if (recentSet.has(song.id)) score += 6;
+        if (favoriteSet.has(song.id)) score += 7;
+        if (song.trending) score += 3;
+        if (song.featured) score += 2;
+        if (currentArtist && song.artist.toLowerCase() === currentArtist) score += 5;
+        if (currentVibe && song.vibe.toLowerCase() === currentVibe) score += 4;
+        return { song, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.song)
+      .slice(0, 12);
+  }, [songs, currentSongId, currentSong, recent, favorites]);
+
   const toggleFavorite = (songId) => {
     setFavorites((prev) =>
       prev.includes(songId) ? prev.filter((id) => id !== songId) : [songId, ...prev]
@@ -357,14 +386,17 @@ export default function AzaadPremiumFrontend() {
         pick = currentQueue[Math.floor(Math.random() * currentQueue.length)];
       }
       playSong(pick);
-      return;
+      return true;
     }
     const nextIndex = direction === "next" ? idx + 1 : idx - 1;
     if (nextIndex >= 0 && nextIndex < currentQueue.length) {
       playSong(currentQueue[nextIndex]);
+      return true;
     } else if (repeat === "all") {
       playSong(direction === "next" ? currentQueue[0] : currentQueue[currentQueue.length - 1]);
+      return true;
     }
+    return false;
   };
 
   const addPlaylist = () => {
@@ -425,7 +457,10 @@ export default function AzaadPremiumFrontend() {
         audio.currentTime = 0;
         audio.play();
       } else {
-        stepSong("next");
+        const advanced = stepSong("next");
+        if (!advanced && autoplay && autoplaySuggestions.length) {
+          playSong(autoplaySuggestions[0]);
+        }
       }
     };
     const onPause = () => setIsPlaying(false);
@@ -444,7 +479,7 @@ export default function AzaadPremiumFrontend() {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("play", onPlay);
     };
-  }, [currentSong, repeat, currentQueue, currentSongId, shuffle]);
+  }, [currentSong, repeat, currentQueue, currentSongId, shuffle, autoplay, autoplaySuggestions]);
 
   const NavButton = ({ id, icon: Icon, label }) => (
     <button
@@ -805,10 +840,37 @@ export default function AzaadPremiumFrontend() {
 
                     <Card className="rounded-[28px] border-white/10 bg-gradient-to-br from-emerald-500/10 via-white/[0.03] to-cyan-500/10 text-white">
                       <CardContent className="p-5">
-                        <div className="mb-2 text-xl font-bold">Built for the next release</div>
-                        <p className="text-sm text-zinc-300">
-                          This frontend is already shaped for playlists, favorites, recent history, search, queue, and premium player motion. Add backend user endpoints next and it becomes fully account-driven.
-                        </p>
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xl font-bold">Autoplay radio</div>
+                            <p className="text-xs text-zinc-400">Spotify-style smart continuation when queue ends.</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setAutoplay((value) => !value)}
+                            className={`rounded-full border ${autoplay ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200" : "border-white/15 bg-white/5 text-zinc-300"}`}
+                          >
+                            <Radio className="mr-1 h-3.5 w-3.5" />
+                            {autoplay ? "On" : "Off"}
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          {autoplaySuggestions.slice(0, 3).map((song) => (
+                            <button key={song.id} onClick={() => playSong(song)} className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition hover:bg-white/5">
+                              <img src={song.coverUrl} alt={song.title} className="h-10 w-10 rounded-xl object-cover" />
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-medium">{song.title}</div>
+                                <div className="truncate text-xs text-zinc-400">{song.artist}</div>
+                              </div>
+                            </button>
+                          ))}
+                          {!autoplaySuggestions.length && (
+                            <div className="rounded-2xl border border-dashed border-white/10 px-3 py-4 text-xs text-zinc-400">
+                              Play more tracks to train your radio suggestions.
+                            </div>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
@@ -1022,6 +1084,13 @@ export default function AzaadPremiumFrontend() {
                 className={`rounded-full p-2 ${repeat !== "off" ? "text-emerald-300" : "text-zinc-400 hover:text-white"}`}
               >
                 <Repeat className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setAutoplay((value) => !value)}
+                className={`rounded-full p-2 ${autoplay ? "text-emerald-300" : "text-zinc-400 hover:text-white"}`}
+                title={autoplay ? "Autoplay radio on" : "Autoplay radio off"}
+              >
+                <Radio className="h-4 w-4" />
               </button>
             </div>
             <div className="flex w-full items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-zinc-500">
