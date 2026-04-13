@@ -165,6 +165,7 @@ export default function AzaadPremiumFrontend() {
   const [favorites, setFavorites] = useState([]);
   const [recent, setRecent] = useState([]);
   const [playlists, setPlaylists] = useState([]);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [queueOpen, setQueueOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("My Playlist");
 
@@ -173,7 +174,7 @@ export default function AzaadPremiumFrontend() {
     const storedApiKey = readStorage(STORAGE_KEYS.apiKey, DEFAULT_API_KEY);
     const storedFavorites = readStorage(STORAGE_KEYS.favorites, []);
     const storedRecent = readStorage(STORAGE_KEYS.recent, []);
-    const storedPlaylists = ensurePlaylists(readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")])) ;
+    const storedPlaylists = ensurePlaylists(readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")]));
     const storedVolume = readStorage(STORAGE_KEYS.volume, 0.8);
 
     setTheme(storedTheme);
@@ -286,6 +287,14 @@ export default function AzaadPremiumFrontend() {
     () => favorites.map((id) => songs.find((song) => song.id === id)).filter(Boolean),
     [favorites, songs]
   );
+  const selectedPlaylist = useMemo(
+    () => playlists.find((pl) => pl.id === selectedPlaylistId) || playlists[0] || null,
+    [playlists, selectedPlaylistId]
+  );
+  const selectedPlaylistSongs = useMemo(() => {
+    if (!selectedPlaylist) return [];
+    return selectedPlaylist.songIds.map((id) => songs.find((song) => song.id === id)).filter(Boolean);
+  }, [selectedPlaylist, songs]);
 
   const currentQueue = useMemo(() => {
     const base = query ? filteredSongs : songs;
@@ -360,7 +369,9 @@ export default function AzaadPremiumFrontend() {
 
   const addPlaylist = () => {
     if (!newPlaylistName.trim()) return;
-    setPlaylists((prev) => [...prev, createPlaylist(newPlaylistName.trim())]);
+    const created = createPlaylist(newPlaylistName.trim());
+    setPlaylists((prev) => [...prev, created]);
+    setSelectedPlaylistId(created.id);
     setNewPlaylistName("My Playlist");
   };
 
@@ -384,9 +395,21 @@ export default function AzaadPremiumFrontend() {
   const removePlaylist = (playlistId) => {
     setPlaylists((prev) => {
       if (prev.length <= 1) return prev;
-      return prev.filter((pl) => pl.id !== playlistId);
+      const next = prev.filter((pl) => pl.id !== playlistId);
+      if (playlistId === selectedPlaylistId) {
+        setSelectedPlaylistId(next[0]?.id || null);
+      }
+      return next;
     });
   };
+
+  useEffect(() => {
+    if (!playlists.length) return;
+    const exists = playlists.some((pl) => pl.id === selectedPlaylistId);
+    if (!selectedPlaylistId || !exists) {
+      setSelectedPlaylistId(playlists[0].id);
+    }
+  }, [playlists, selectedPlaylistId]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -581,8 +604,8 @@ export default function AzaadPremiumFrontend() {
             <ScrollArea className="h-[320px] rounded-2xl border border-white/10 bg-white/[0.03] p-2">
               <div className="space-y-2 p-1">
                 {playlists.map((playlist) => (
-                  <div key={playlist.id} className="flex items-center gap-2 rounded-2xl border border-transparent px-2 py-2 transition hover:border-emerald-400/20 hover:bg-white/5">
-                    <button className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1 py-1 text-left">
+                  <div key={playlist.id} className={`flex items-center gap-2 rounded-2xl border px-2 py-2 transition ${selectedPlaylist?.id === playlist.id ? "border-emerald-400/40 bg-emerald-500/10" : "border-transparent hover:border-emerald-400/20 hover:bg-white/5"}`}>
+                    <button onClick={() => setSelectedPlaylistId(playlist.id)} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1 py-1 text-left">
                       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/20">
                         <ListMusic className="h-5 w-5 text-emerald-300" />
                       </div>
@@ -594,13 +617,14 @@ export default function AzaadPremiumFrontend() {
                         </div>
                       </div>
                     </button>
-                    <button onClick={() => renamePlaylist(playlist.id)} className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white">
+                    <button onClick={() => renamePlaylist(playlist.id)} className="rounded-full p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white" title="Rename playlist">
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => removePlaylist(playlist.id)}
                       disabled={playlists.length <= 1}
-                      className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-full p-2 text-zinc-400 transition hover:bg-white/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+                      title={playlists.length <= 1 ? "At least one playlist is required" : "Delete playlist"}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -823,13 +847,16 @@ export default function AzaadPremiumFrontend() {
                       <div className="mb-4 text-xl font-bold">Playlists</div>
                       <div className="space-y-2">
                         {playlists.map((playlist) => (
-                          <div key={playlist.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                          <div key={playlist.id} className={`rounded-2xl border bg-white/[0.04] p-4 ${selectedPlaylist?.id === playlist.id ? "border-emerald-400/40" : "border-white/10"}`}>
                             <div className="flex items-center justify-between gap-3">
                               <div className="truncate font-semibold">{playlist.name}</div>
                               <Badge variant="secondary" className="rounded-full bg-emerald-500/15 text-emerald-300">{playlist.songIds.length}</Badge>
                             </div>
                             <div className="mt-1 text-xs text-zinc-400">Updated {new Date(playlist.createdAt).toLocaleDateString()}</div>
                             <div className="mt-3 flex items-center gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setSelectedPlaylistId(playlist.id)} className="rounded-xl">
+                                Open
+                              </Button>
                               <Button size="sm" variant="ghost" onClick={() => renamePlaylist(playlist.id)} className="rounded-xl border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white">
                                 <Pencil className="mr-1 h-3.5 w-3.5" /> Rename
                               </Button>
@@ -850,11 +877,17 @@ export default function AzaadPremiumFrontend() {
                   </Card>
                   <Card className="rounded-[28px] border-white/10 bg-white/[0.04] text-white">
                     <CardContent className="p-5">
-                      <div className="mb-4 text-xl font-bold">All tracks</div>
+                      <div className="mb-2 text-xl font-bold">{selectedPlaylist ? `${selectedPlaylist.name} songs` : "Playlist songs"}</div>
+                      <div className="mb-4 text-sm text-zinc-400">Open a playlist to see and play its tracks.</div>
                       <div className="space-y-1">
-                        {songs.map((song, index) => (
+                        {selectedPlaylistSongs.map((song, index) => (
                           <SongRow key={song.id} song={song} index={index} />
                         ))}
+                        {!selectedPlaylistSongs.length && (
+                          <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-400">
+                            No songs in this playlist yet. Use the <span className="text-zinc-200">Add</span> button on any track to include it.
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
