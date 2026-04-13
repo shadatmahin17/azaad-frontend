@@ -107,12 +107,12 @@ function LogoPulse({ spinning = false }) {
     <motion.div
       animate={spinning ? { rotate: 360 } : { rotate: 0 }}
       transition={spinning ? { duration: 10, repeat: Infinity, ease: "linear" } : { duration: 0.4 }}
-      className="relative h-11 w-11 overflow-hidden rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/20 via-white/10 to-white/5 p-1 shadow-2xl shadow-emerald-950/40"
+      className="relative h-12 w-12 overflow-hidden rounded-2xl bg-transparent shadow-xl shadow-emerald-950/20"
     >
       <img
         src="https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/favicon.png"
         alt="Azaad"
-        className="h-full w-full rounded-xl object-cover"
+        className="h-full w-full rounded-2xl object-contain"
       />
     </motion.div>
   );
@@ -499,12 +499,8 @@ export default function AzaadPremiumFrontend() {
 
       <div className="flex min-h-screen">
         <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/30 p-5 backdrop-blur-2xl lg:block">
-          <div className="flex items-center gap-3 px-2 pb-8">
+          <div className="flex items-center justify-center px-2 pb-8">
             <LogoPulse spinning={isPlaying} />
-            <div>
-              <div className="text-lg font-bold tracking-tight">Azaad</div>
-              <div className="text-xs text-zinc-400">Premium streaming frontend</div>
-            </div>
           </div>
 
           <div className="space-y-2">
@@ -562,13 +558,16 @@ export default function AzaadPremiumFrontend() {
             <ScrollArea className="h-[320px] rounded-2xl border border-white/10 bg-white/[0.03] p-2">
               <div className="space-y-2 p-1">
                 {playlists.map((playlist) => (
-                  <button key={playlist.id} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-white/5">
+                  <button key={playlist.id} className="flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-left transition hover:border-emerald-400/20 hover:bg-white/5">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/20">
                       <ListMusic className="h-5 w-5 text-emerald-300" />
                     </div>
-                    <div>
-                      <div className="font-medium text-white">{playlist.name}</div>
-                      <div className="text-xs text-zinc-400">{playlist.songIds.length} tracks</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium text-white">{playlist.name}</div>
+                      <div className="mt-0.5 flex items-center justify-between text-xs text-zinc-400">
+                        <span>{playlist.songIds.length} tracks</span>
+                        <span>{new Date(playlist.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -789,9 +788,12 @@ export default function AzaadPremiumFrontend() {
                       <div className="mb-4 text-xl font-bold">Playlists</div>
                       <div className="space-y-2">
                         {playlists.map((playlist) => (
-                          <div key={playlist.id} className="rounded-2xl bg-white/[0.04] p-4">
-                            <div className="font-semibold">{playlist.name}</div>
-                            <div className="mt-1 text-xs text-zinc-400">{playlist.songIds.length} tracks saved</div>
+                          <div key={playlist.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="truncate font-semibold">{playlist.name}</div>
+                              <Badge variant="secondary" className="rounded-full bg-emerald-500/15 text-emerald-300">{playlist.songIds.length}</Badge>
+                            </div>
+                            <div className="mt-1 text-xs text-zinc-400">Updated {new Date(playlist.createdAt).toLocaleDateString()}</div>
                           </div>
                         ))}
                       </div>
