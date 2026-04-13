@@ -642,7 +642,7 @@ export default function AzaadPremiumFrontend() {
                 <div className="text-2xl font-bold tracking-tight">{view === "home" ? "Good evening" : view.charAt(0).toUpperCase() + view.slice(1)}</div>
                 <div className="text-sm text-zinc-400">Startup-grade music experience connected to your Railway backend.</div>
               </div>
-              <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
                 <div className="relative w-full min-w-0 sm:min-w-[220px] sm:max-w-md lg:w-80">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                   <Input
@@ -655,20 +655,22 @@ export default function AzaadPremiumFrontend() {
                 <Input
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full sm:w-40 rounded-2xl border-white/10 bg-white/5 text-white"
+                  className="w-full rounded-2xl border-white/10 bg-white/5 text-white sm:w-40"
                   placeholder="API key"
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-                  className="rounded-2xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-                <Button onClick={() => setQueueOpen(true)} className="rounded-2xl bg-emerald-400 text-black hover:bg-emerald-300">
-                  <ListMusic className="mr-2 h-4 w-4" /> Queue
-                </Button>
+                <div className="flex w-full items-center justify-between gap-3 sm:ml-auto sm:w-auto sm:justify-start">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+                    className="shrink-0 rounded-2xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  >
+                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </Button>
+                  <Button onClick={() => setQueueOpen(true)} className="h-10 shrink-0 rounded-2xl bg-emerald-400 px-4 text-black hover:bg-emerald-300">
+                    <ListMusic className="mr-2 h-4 w-4" /> Queue
+                  </Button>
+                </div>
               </div>
             </div>
           </header>
