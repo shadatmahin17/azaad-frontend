@@ -23,6 +23,8 @@ import {
   Disc3,
   Radio,
   ChevronRight,
+  Pencil,
+  Trash2,
   X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,17 +104,24 @@ function createPlaylist(name) {
   };
 }
 
-function LogoPulse({ spinning = false }) {
+function ensurePlaylists(playlists) {
+  if (!Array.isArray(playlists) || playlists.length === 0) {
+    return [createPlaylist("My Playlist")];
+  }
+  return playlists;
+}
+
+function LogoPulse() {
   return (
     <motion.div
-      animate={spinning ? { rotate: 360 } : { rotate: 0 }}
-      transition={spinning ? { duration: 10, repeat: Infinity, ease: "linear" } : { duration: 0.4 }}
-      className="relative h-11 w-11 overflow-hidden rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/20 via-white/10 to-white/5 p-1 shadow-2xl shadow-emerald-950/40"
+      animate={{ rotate: 0 }}
+      transition={{ duration: 0.3 }}
+      className="relative h-12 w-12 overflow-hidden rounded-2xl bg-transparent shadow-xl shadow-emerald-950/20"
     >
       <img
-        src="https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/favicon.png"
+        src="https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/Logo.png"
         alt="Azaad"
-        className="h-full w-full rounded-xl object-cover"
+        className="h-full w-full rounded-2xl object-contain"
       />
     </motion.div>
   );
@@ -164,7 +173,7 @@ export default function AzaadPremiumFrontend() {
     const storedApiKey = readStorage(STORAGE_KEYS.apiKey, DEFAULT_API_KEY);
     const storedFavorites = readStorage(STORAGE_KEYS.favorites, []);
     const storedRecent = readStorage(STORAGE_KEYS.recent, []);
-    const storedPlaylists = readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")]);
+    const storedPlaylists = ensurePlaylists(readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")])) ;
     const storedVolume = readStorage(STORAGE_KEYS.volume, 0.8);
 
     setTheme(storedTheme);
@@ -179,7 +188,7 @@ export default function AzaadPremiumFrontend() {
   useEffect(() => writeStorage(STORAGE_KEYS.apiKey, apiKey), [apiKey]);
   useEffect(() => writeStorage(STORAGE_KEYS.favorites, favorites), [favorites]);
   useEffect(() => writeStorage(STORAGE_KEYS.recent, recent), [recent]);
-  useEffect(() => writeStorage(STORAGE_KEYS.playlists, playlists), [playlists]);
+  useEffect(() => writeStorage(STORAGE_KEYS.playlists, ensurePlaylists(playlists)), [playlists]);
   useEffect(() => writeStorage(STORAGE_KEYS.volume, volume), [volume]);
 
   useEffect(() => {
@@ -365,6 +374,20 @@ export default function AzaadPremiumFrontend() {
     );
   };
 
+  const renamePlaylist = (playlistId) => {
+    const playlist = playlists.find((pl) => pl.id === playlistId);
+    const nextName = window.prompt("Rename playlist", playlist?.name || "");
+    if (!nextName || !nextName.trim()) return;
+    setPlaylists((prev) => prev.map((pl) => (pl.id === playlistId ? { ...pl, name: nextName.trim() } : pl)));
+  };
+
+  const removePlaylist = (playlistId) => {
+    setPlaylists((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((pl) => pl.id !== playlistId);
+    });
+  };
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -499,12 +522,8 @@ export default function AzaadPremiumFrontend() {
 
       <div className="flex min-h-screen">
         <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/30 p-5 backdrop-blur-2xl lg:block">
-          <div className="flex items-center gap-3 px-2 pb-8">
-            <LogoPulse spinning={isPlaying} />
-            <div>
-              <div className="text-lg font-bold tracking-tight">Azaad</div>
-              <div className="text-xs text-zinc-400">Premium streaming frontend</div>
-            </div>
+          <div className="flex items-center justify-center px-2 pb-8">
+            <LogoPulse />
           </div>
 
           <div className="space-y-2">
@@ -562,15 +581,30 @@ export default function AzaadPremiumFrontend() {
             <ScrollArea className="h-[320px] rounded-2xl border border-white/10 bg-white/[0.03] p-2">
               <div className="space-y-2 p-1">
                 {playlists.map((playlist) => (
-                  <button key={playlist.id} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-white/5">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/20">
-                      <ListMusic className="h-5 w-5 text-emerald-300" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-white">{playlist.name}</div>
-                      <div className="text-xs text-zinc-400">{playlist.songIds.length} tracks</div>
-                    </div>
-                  </button>
+                  <div key={playlist.id} className="flex items-center gap-2 rounded-2xl border border-transparent px-2 py-2 transition hover:border-emerald-400/20 hover:bg-white/5">
+                    <button className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1 py-1 text-left">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/20">
+                        <ListMusic className="h-5 w-5 text-emerald-300" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-white">{playlist.name}</div>
+                        <div className="mt-0.5 flex items-center justify-between text-xs text-zinc-400">
+                          <span>{playlist.songIds.length} tracks</span>
+                          <span>{new Date(playlist.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </button>
+                    <button onClick={() => renamePlaylist(playlist.id)} className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => removePlaylist(playlist.id)}
+                      disabled={playlists.length <= 1}
+                      className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
@@ -584,8 +618,8 @@ export default function AzaadPremiumFrontend() {
                 <div className="text-2xl font-bold tracking-tight">{view === "home" ? "Good evening" : view.charAt(0).toUpperCase() + view.slice(1)}</div>
                 <div className="text-sm text-zinc-400">Startup-grade music experience connected to your Railway backend.</div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative w-full min-w-[220px] max-w-md lg:w-80">
+              <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
+                <div className="relative w-full min-w-0 sm:min-w-[220px] sm:max-w-md lg:w-80">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                   <Input
                     value={query}
@@ -597,7 +631,7 @@ export default function AzaadPremiumFrontend() {
                 <Input
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  className="w-40 rounded-2xl border-white/10 bg-white/5 text-white"
+                  className="w-full sm:w-40 rounded-2xl border-white/10 bg-white/5 text-white"
                   placeholder="API key"
                 />
                 <Button
@@ -678,6 +712,7 @@ export default function AzaadPremiumFrontend() {
                               <span>{formatTime(duration || currentSong.duration || 0)}</span>
                             </div>
                             <Slider
+                              className="azaad-slider azaad-slider--progress"
                               value={[duration ? (progress / duration) * 100 : 0]}
                               onValueChange={(value) => {
                                 const audio = audioRef.current;
@@ -788,9 +823,26 @@ export default function AzaadPremiumFrontend() {
                       <div className="mb-4 text-xl font-bold">Playlists</div>
                       <div className="space-y-2">
                         {playlists.map((playlist) => (
-                          <div key={playlist.id} className="rounded-2xl bg-white/[0.04] p-4">
-                            <div className="font-semibold">{playlist.name}</div>
-                            <div className="mt-1 text-xs text-zinc-400">{playlist.songIds.length} tracks saved</div>
+                          <div key={playlist.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="truncate font-semibold">{playlist.name}</div>
+                              <Badge variant="secondary" className="rounded-full bg-emerald-500/15 text-emerald-300">{playlist.songIds.length}</Badge>
+                            </div>
+                            <div className="mt-1 text-xs text-zinc-400">Updated {new Date(playlist.createdAt).toLocaleDateString()}</div>
+                            <div className="mt-3 flex items-center gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => renamePlaylist(playlist.id)} className="rounded-xl border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white">
+                                <Pencil className="mr-1 h-3.5 w-3.5" /> Rename
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removePlaylist(playlist.id)}
+                                disabled={playlists.length <= 1}
+                                className="rounded-xl border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-rose-300 disabled:opacity-40"
+                              >
+                                <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -903,7 +955,7 @@ export default function AzaadPremiumFrontend() {
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/70 px-4 py-3 backdrop-blur-2xl md:px-6">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/75 px-3 py-3 backdrop-blur-2xl sm:px-4 md:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3 lg:w-[28%]">
             <img src={currentSong?.coverUrl || defaultCover} alt={currentSong?.title || "No track"} className={`h-14 w-14 rounded-2xl object-cover shadow-xl ${isPlaying ? "ring-2 ring-emerald-400/40" : ""}`} />
@@ -916,8 +968,8 @@ export default function AzaadPremiumFrontend() {
             </button>
           </div>
 
-          <div className="flex flex-1 flex-col items-center gap-3 lg:max-w-2xl">
-            <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex w-full flex-1 flex-col items-center gap-3 lg:max-w-2xl">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 md:gap-4">
               <button onClick={() => setShuffle((s) => !s)} className={`rounded-full p-2 ${shuffle ? "text-emerald-300" : "text-zinc-400 hover:text-white"}`}>
                 <Shuffle className="h-4 w-4" />
               </button>
@@ -937,9 +989,10 @@ export default function AzaadPremiumFrontend() {
                 <Repeat className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex w-full items-center gap-3 text-xs text-zinc-500">
+            <div className="flex w-full items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-zinc-500">
               <span>{formatTime(progress)}</span>
               <Slider
+                className="azaad-slider azaad-slider--progress"
                 value={[duration ? (progress / duration) * 100 : 0]}
                 onValueChange={(value) => {
                   const audio = audioRef.current;
@@ -950,18 +1003,18 @@ export default function AzaadPremiumFrontend() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 lg:w-[28%]">
+          <div className="hidden items-center justify-end gap-3 sm:flex lg:w-[28%]">
             <Equalizer active={isPlaying} />
             <Disc3 className={`h-4 w-4 ${isPlaying ? "animate-spin text-emerald-300" : "text-zinc-500"}`} />
             <Volume2 className="h-4 w-4 text-zinc-400" />
-            <div className="w-28">
-              <Slider value={[volume * 100]} onValueChange={(value) => setVolume(value[0] / 100)} />
+            <div className="w-24 md:w-28">
+              <Slider className="azaad-slider azaad-slider--volume" value={[volume * 100]} onValueChange={(value) => setVolume(value[0] / 100)} />
             </div>
           </div>
         </div>
       </div>
 
-      <nav className="fixed bottom-24 left-4 right-4 z-20 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-2 backdrop-blur-2xl lg:hidden">
+      <nav className="fixed bottom-[92px] left-2 right-2 z-20 sm:bottom-24 sm:left-4 sm:right-4 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-2 backdrop-blur-2xl lg:hidden">
         {[
           ["home", Home],
           ["search", Search],
@@ -979,7 +1032,7 @@ export default function AzaadPremiumFrontend() {
       {loading && (
         <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-black/30 backdrop-blur-sm">
           <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ repeat: Infinity, duration: 1.2 }} className="flex items-center gap-3 rounded-3xl border border-white/10 bg-zinc-950/90 px-5 py-4 text-white shadow-2xl">
-            <LogoPulse spinning />
+            <LogoPulse />
             <div>
               <div className="font-semibold">Loading Azaad</div>
               <div className="text-sm text-zinc-400">Fetching your live catalog…</div>
