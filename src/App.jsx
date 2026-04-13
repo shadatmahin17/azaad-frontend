@@ -23,6 +23,8 @@ import {
   Disc3,
   Radio,
   ChevronRight,
+  Pencil,
+  Trash2,
   X,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,15 +104,22 @@ function createPlaylist(name) {
   };
 }
 
-function LogoPulse({ spinning = false }) {
+function ensurePlaylists(playlists) {
+  if (!Array.isArray(playlists) || playlists.length === 0) {
+    return [createPlaylist("My Playlist")];
+  }
+  return playlists;
+}
+
+function LogoPulse() {
   return (
     <motion.div
-      animate={spinning ? { rotate: 360 } : { rotate: 0 }}
-      transition={spinning ? { duration: 10, repeat: Infinity, ease: "linear" } : { duration: 0.4 }}
+      animate={{ rotate: 0 }}
+      transition={{ duration: 0.3 }}
       className="relative h-12 w-12 overflow-hidden rounded-2xl bg-transparent shadow-xl shadow-emerald-950/20"
     >
       <img
-        src="https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/favicon.png"
+        src="https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/Logo.png"
         alt="Azaad"
         className="h-full w-full rounded-2xl object-contain"
       />
@@ -164,7 +173,7 @@ export default function AzaadPremiumFrontend() {
     const storedApiKey = readStorage(STORAGE_KEYS.apiKey, DEFAULT_API_KEY);
     const storedFavorites = readStorage(STORAGE_KEYS.favorites, []);
     const storedRecent = readStorage(STORAGE_KEYS.recent, []);
-    const storedPlaylists = readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")]);
+    const storedPlaylists = ensurePlaylists(readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")])) ;
     const storedVolume = readStorage(STORAGE_KEYS.volume, 0.8);
 
     setTheme(storedTheme);
@@ -179,7 +188,7 @@ export default function AzaadPremiumFrontend() {
   useEffect(() => writeStorage(STORAGE_KEYS.apiKey, apiKey), [apiKey]);
   useEffect(() => writeStorage(STORAGE_KEYS.favorites, favorites), [favorites]);
   useEffect(() => writeStorage(STORAGE_KEYS.recent, recent), [recent]);
-  useEffect(() => writeStorage(STORAGE_KEYS.playlists, playlists), [playlists]);
+  useEffect(() => writeStorage(STORAGE_KEYS.playlists, ensurePlaylists(playlists)), [playlists]);
   useEffect(() => writeStorage(STORAGE_KEYS.volume, volume), [volume]);
 
   useEffect(() => {
@@ -365,6 +374,20 @@ export default function AzaadPremiumFrontend() {
     );
   };
 
+  const renamePlaylist = (playlistId) => {
+    const playlist = playlists.find((pl) => pl.id === playlistId);
+    const nextName = window.prompt("Rename playlist", playlist?.name || "");
+    if (!nextName || !nextName.trim()) return;
+    setPlaylists((prev) => prev.map((pl) => (pl.id === playlistId ? { ...pl, name: nextName.trim() } : pl)));
+  };
+
+  const removePlaylist = (playlistId) => {
+    setPlaylists((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((pl) => pl.id !== playlistId);
+    });
+  };
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -500,7 +523,7 @@ export default function AzaadPremiumFrontend() {
       <div className="flex min-h-screen">
         <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/30 p-5 backdrop-blur-2xl lg:block">
           <div className="flex items-center justify-center px-2 pb-8">
-            <LogoPulse spinning={isPlaying} />
+            <LogoPulse />
           </div>
 
           <div className="space-y-2">
@@ -558,18 +581,30 @@ export default function AzaadPremiumFrontend() {
             <ScrollArea className="h-[320px] rounded-2xl border border-white/10 bg-white/[0.03] p-2">
               <div className="space-y-2 p-1">
                 {playlists.map((playlist) => (
-                  <button key={playlist.id} className="flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-left transition hover:border-emerald-400/20 hover:bg-white/5">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/20">
-                      <ListMusic className="h-5 w-5 text-emerald-300" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium text-white">{playlist.name}</div>
-                      <div className="mt-0.5 flex items-center justify-between text-xs text-zinc-400">
-                        <span>{playlist.songIds.length} tracks</span>
-                        <span>{new Date(playlist.createdAt).toLocaleDateString()}</span>
+                  <div key={playlist.id} className="flex items-center gap-2 rounded-2xl border border-transparent px-2 py-2 transition hover:border-emerald-400/20 hover:bg-white/5">
+                    <button className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1 py-1 text-left">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/20">
+                        <ListMusic className="h-5 w-5 text-emerald-300" />
                       </div>
-                    </div>
-                  </button>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium text-white">{playlist.name}</div>
+                        <div className="mt-0.5 flex items-center justify-between text-xs text-zinc-400">
+                          <span>{playlist.songIds.length} tracks</span>
+                          <span>{new Date(playlist.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </button>
+                    <button onClick={() => renamePlaylist(playlist.id)} className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => removePlaylist(playlist.id)}
+                      disabled={playlists.length <= 1}
+                      className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
@@ -794,6 +829,20 @@ export default function AzaadPremiumFrontend() {
                               <Badge variant="secondary" className="rounded-full bg-emerald-500/15 text-emerald-300">{playlist.songIds.length}</Badge>
                             </div>
                             <div className="mt-1 text-xs text-zinc-400">Updated {new Date(playlist.createdAt).toLocaleDateString()}</div>
+                            <div className="mt-3 flex items-center gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => renamePlaylist(playlist.id)} className="rounded-xl border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white">
+                                <Pencil className="mr-1 h-3.5 w-3.5" /> Rename
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removePlaylist(playlist.id)}
+                                disabled={playlists.length <= 1}
+                                className="rounded-xl border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-rose-300 disabled:opacity-40"
+                              >
+                                <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -983,7 +1032,7 @@ export default function AzaadPremiumFrontend() {
       {loading && (
         <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-black/30 backdrop-blur-sm">
           <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ repeat: Infinity, duration: 1.2 }} className="flex items-center gap-3 rounded-3xl border border-white/10 bg-zinc-950/90 px-5 py-4 text-white shadow-2xl">
-            <LogoPulse spinning />
+            <LogoPulse />
             <div>
               <div className="font-semibold">Loading Azaad</div>
               <div className="text-sm text-zinc-400">Fetching your live catalog…</div>
