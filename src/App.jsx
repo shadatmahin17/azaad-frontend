@@ -84,9 +84,9 @@ function normalizeSong(raw, index) {
 
   return {
     id: String(raw.id || raw._id || raw.slug || `song-${index}`),
-    title: raw.title || raw.songTitle || raw.name || "Untitled Track",
-    artist: raw.artist || raw.artistName || raw.singer || raw.singers || "Unknown Artist",
-    album: raw.album || raw.category || "Azaad Collection",
+    title: raw.title || raw.songTitle || raw.name || raw.metadata?.title || "Untitled Track",
+    artist: raw.artist || raw.artistName || raw.singer || raw.singers || raw.metadata?.artist || "Unknown Artist",
+    album: raw.album || raw.category || raw.metadata?.album || "Azaad Collection",
     vibe: raw.vibe || raw.genre || raw.type || "Featured",
     duration: Number(raw.duration || 0),
     featured: Boolean(raw.featured),
@@ -105,11 +105,25 @@ function createPlaylist(name) {
   };
 }
 
+function normalizePlaylist(raw, index) {
+  const fallback = createPlaylist(`My Playlist ${index + 1}`);
+  if (!raw || typeof raw !== "object") return fallback;
+  return {
+    id: String(raw.id || fallback.id),
+    name: String(raw.name || fallback.name),
+    songIds: Array.isArray(raw.songIds) ? raw.songIds.map(String) : [],
+    createdAt:
+      typeof raw.createdAt === "string" && !Number.isNaN(Date.parse(raw.createdAt))
+        ? raw.createdAt
+        : fallback.createdAt,
+  };
+}
+
 function ensurePlaylists(playlists) {
   if (!Array.isArray(playlists) || playlists.length === 0) {
     return [createPlaylist("My Playlist")];
   }
-  return playlists;
+  return playlists.map(normalizePlaylist);
 }
 
 function LogoPulse() {
@@ -284,6 +298,19 @@ export default function AzaadPremiumFrontend() {
 
   const featuredSongs = useMemo(() => songs.filter((song) => song.featured).slice(0, 6), [songs]);
   const trendingSongs = useMemo(() => songs.filter((song) => song.trending).slice(0, 8), [songs]);
+  const artists = useMemo(() => {
+    const grouped = new Map();
+    songs.forEach((song) => {
+      const key = song.artist?.trim() || "Unknown Artist";
+      const current = grouped.get(key) || { name: key, songs: [], albums: new Set(), coverUrl: song.coverUrl };
+      current.songs.push(song);
+      current.albums.add(song.album);
+      grouped.set(key, current);
+    });
+    return Array.from(grouped.values())
+      .map((entry) => ({ ...entry, albums: Array.from(entry.albums) }))
+      .sort((a, b) => b.songs.length - a.songs.length || a.name.localeCompare(b.name));
+  }, [songs]);
   const recentSongs = useMemo(
     () => recent.map((id) => songs.find((song) => song.id === id)).filter(Boolean).slice(0, 8),
     [recent, songs]
@@ -363,6 +390,11 @@ export default function AzaadPremiumFrontend() {
     if (!currentSong && songs.length) {
       await playSong(songs[0]);
       return;
+    }
+    if (currentSong?.audioUrl && audio.src !== currentSong.audioUrl) {
+      audio.src = currentSong.audioUrl;
+      setProgress(0);
+      setDuration(currentSong.duration || 0);
     }
     if (audio.paused) {
       try {
@@ -588,6 +620,7 @@ export default function AzaadPremiumFrontend() {
             <NavButton id="home" icon={Home} label="Home" />
             <NavButton id="search" icon={Search} label="Search" />
             <NavButton id="library" icon={Library} label="Your Library" />
+            <NavButton id="artists" icon={Disc3} label="Artists" />
             <NavButton id="favorites" icon={Heart} label="Favorites" />
             <NavButton id="profile" icon={User} label="Profile" />
           </div>
@@ -959,6 +992,49 @@ export default function AzaadPremiumFrontend() {
               </section>
             )}
 
+            {view === "artists" && (
+              <section className="space-y-5">
+                <div>
+                  <div className="text-2xl font-bold">Artists</div>
+                  <div className="text-sm text-zinc-400">
+                    Dynamically generated from <span className="font-medium text-zinc-200">GET /songs</span> metadata.
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {artists.map((artist) => (
+                    <Card key={artist.name} className="rounded-[24px] border-white/10 bg-white/[0.04] text-white">
+                      <CardContent className="space-y-4 p-5">
+                        <div className="flex items-center gap-3">
+                          <img src={artist.coverUrl || defaultCover} alt={artist.name} className="h-14 w-14 rounded-2xl object-cover" />
+                          <div className="min-w-0">
+                            <div className="truncate text-lg font-semibold">{artist.name}</div>
+                            <div className="text-xs text-zinc-400">
+                              {artist.songs.length} songs · {artist.albums.length} albums
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          {artist.songs.slice(0, 5).map((song) => (
+                            <button key={song.id} onClick={() => playSong(song)} className="flex w-full items-center justify-between rounded-xl px-2 py-2 text-left text-sm hover:bg-white/5">
+                              <span className="truncate pr-3">{song.title}</span>
+                              <span className="shrink-0 text-xs text-zinc-500">{song.album}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {!artists.length && !loading && (
+                    <Card className="rounded-[24px] border-white/10 bg-white/[0.04] text-white md:col-span-2 xl:col-span-3">
+                      <CardContent className="p-8 text-center text-sm text-zinc-400">
+                        No artists found in the current `/songs` response.
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </section>
+            )}
+
             {view === "favorites" && (
               <section className="space-y-5">
                 <div>
@@ -1123,6 +1199,7 @@ export default function AzaadPremiumFrontend() {
           ["home", Home],
           ["search", Search],
           ["library", Library],
+          ["artists", Disc3],
           ["favorites", Heart],
           ["profile", User],
         ].map(([id, Icon]) => (
