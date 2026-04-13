@@ -105,11 +105,25 @@ function createPlaylist(name) {
   };
 }
 
+function normalizePlaylist(raw, index) {
+  const fallback = createPlaylist(`My Playlist ${index + 1}`);
+  if (!raw || typeof raw !== "object") return fallback;
+  return {
+    id: String(raw.id || fallback.id),
+    name: String(raw.name || fallback.name),
+    songIds: Array.isArray(raw.songIds) ? raw.songIds.map(String) : [],
+    createdAt:
+      typeof raw.createdAt === "string" && !Number.isNaN(Date.parse(raw.createdAt))
+        ? raw.createdAt
+        : fallback.createdAt,
+  };
+}
+
 function ensurePlaylists(playlists) {
   if (!Array.isArray(playlists) || playlists.length === 0) {
     return [createPlaylist("My Playlist")];
   }
-  return playlists;
+  return playlists.map(normalizePlaylist);
 }
 
 function LogoPulse() {
@@ -363,6 +377,11 @@ export default function AzaadPremiumFrontend() {
     if (!currentSong && songs.length) {
       await playSong(songs[0]);
       return;
+    }
+    if (currentSong?.audioUrl && audio.src !== currentSong.audioUrl) {
+      audio.src = currentSong.audioUrl;
+      setProgress(0);
+      setDuration(currentSong.duration || 0);
     }
     if (audio.paused) {
       try {
