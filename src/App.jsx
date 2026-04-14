@@ -1087,7 +1087,7 @@ export default function AzaadPremiumFrontend() {
       <AnimatePresence>
         {queueOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ x: 420 }} animate={{ x: 0 }} exit={{ x: 420 }} transition={{ type: "spring", damping: 28, stiffness: 220 }} className="absolute right-0 top-0 h-full w-full max-w-md border-l border-white/10 bg-zinc-950/95 p-5 text-white shadow-2xl shadow-black/50">
+            <motion.div initial={{ x: 420 }} animate={{ x: 0 }} exit={{ x: 420 }} transition={{ type: "spring", damping: 28, stiffness: 220 }} className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-white/10 bg-zinc-950/95 p-5 text-white shadow-2xl shadow-black/50">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <div className="text-xl font-bold">Queue</div>
@@ -1118,7 +1118,7 @@ export default function AzaadPremiumFrontend() {
                   <div className="truncate text-xs text-zinc-300">{currentSong.artist}</div>
                 </div>
               )}
-              <ScrollArea className="h-[calc(100vh-260px)] pr-2">
+              <ScrollArea className="min-h-0 flex-1 pr-2">
                 <div className="space-y-2">
                   {currentQueue.map((song, index) => (
                     <button
