@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { API_BASE, DEFAULT_API_KEY } from "@/config/api";
 import { STORAGE_KEYS, readStorage, writeStorage } from "@/lib/storage";
 import { DEFAULT_COVER, createPlaylist, ensurePlaylists, formatTime, normalizeSong } from "@/lib/music";
@@ -103,6 +103,7 @@ export default function AzaadPremiumFrontend() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [queueOpen, setQueueOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("My Playlist");
+  const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
   const [autoplay, setAutoplay] = useState(true);
   const [currentTime, setCurrentTime] = useState(() => new Date());
 
@@ -361,11 +362,13 @@ export default function AzaadPremiumFrontend() {
   };
 
   const addPlaylist = () => {
-    if (!newPlaylistName.trim()) return;
+    if (!newPlaylistName.trim()) return false;
     const created = createPlaylist(newPlaylistName.trim());
     setPlaylists((prev) => [...prev, created]);
     setSelectedPlaylistId(created.id);
     setNewPlaylistName("My Playlist");
+    setCreatePlaylistOpen(false);
+    return true;
   };
 
   const addToPlaylist = (playlistId, songId) => {
@@ -579,21 +582,41 @@ export default function AzaadPremiumFrontend() {
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-between px-2 text-sm">
               <span className="font-semibold text-zinc-200">Playlists</span>
-              <Dialog>
+              <Dialog open={createPlaylistOpen} onOpenChange={setCreatePlaylistOpen}>
                 <DialogTrigger asChild>
-                  <button className="rounded-full p-1 text-zinc-400 hover:bg-white/10 hover:text-white">
+                  <button className="rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-zinc-400 transition hover:border-emerald-300/40 hover:bg-emerald-300/10 hover:text-emerald-100">
                     <Plus className="h-4 w-4" />
                   </button>
                 </DialogTrigger>
-                <DialogContent className="border-white/10 bg-zinc-950 text-white">
-                  <DialogHeader>
-                    <DialogTitle>Create playlist</DialogTitle>
+                <DialogContent className="border border-white/10 bg-gradient-to-b from-zinc-900 to-zinc-950 text-white shadow-2xl shadow-black/40">
+                  <DialogHeader className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <DialogTitle className="text-xl font-semibold tracking-tight">Create playlist</DialogTitle>
+                      <p className="mt-1 text-sm text-zinc-400">Give your playlist a name to get started.</p>
+                    </div>
+                    <DialogClose asChild>
+                      <button className="rounded-lg border border-white/10 p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white" title="Close">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </DialogClose>
                   </DialogHeader>
-                  <div className="space-y-3">
-                    <Input value={newPlaylistName} onChange={(e) => setNewPlaylistName(e.target.value)} className="border-white/10 bg-white/5" />
-                    <Button onClick={addPlaylist} className="w-full rounded-2xl bg-emerald-400 text-black hover:bg-emerald-300">
-                      Create
-                    </Button>
+                  <div className="space-y-4">
+                    <Input
+                      value={newPlaylistName}
+                      onChange={(e) => setNewPlaylistName(e.target.value)}
+                      className="h-12 rounded-xl border-white/15 bg-white/5 text-base placeholder:text-zinc-500"
+                      placeholder="My Playlist"
+                    />
+                    <div className="flex items-center gap-2">
+                      <DialogClose asChild>
+                        <Button variant="ghost" className="h-11 flex-1 rounded-xl border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white">
+                          Cancel
+                        </Button>
+                      </DialogClose>
+                      <Button onClick={addPlaylist} className="h-11 flex-1 rounded-xl bg-emerald-400 text-base font-semibold text-black hover:bg-emerald-300">
+                        Create
+                      </Button>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
