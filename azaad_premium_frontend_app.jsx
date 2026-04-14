@@ -961,7 +961,7 @@ export default function AzaadPremiumFrontend() {
         </div>
       </div>
 
-      <nav className="fixed bottom-24 left-4 right-4 z-20 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-2 backdrop-blur-2xl lg:hidden">
+      <nav className="fixed bottom-28 left-4 right-4 z-40 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-2 backdrop-blur-2xl lg:hidden">
         {[
           ["home", Home],
           ["search", Search],
