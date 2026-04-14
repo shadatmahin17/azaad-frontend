@@ -73,6 +73,14 @@ function Equalizer({ active }) {
   );
 }
 
+function getGreetingByHour(hour) {
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 21) return "Good evening";
+  return "Good night";
+}
+
 export default function AzaadPremiumFrontend() {
   const audioRef = useRef(null);
   const [theme, setTheme] = useState("dark");
@@ -96,6 +104,7 @@ export default function AzaadPremiumFrontend() {
   const [queueOpen, setQueueOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("My Playlist");
   const [autoplay, setAutoplay] = useState(true);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
   useEffect(() => {
     const storedTheme = readStorage(STORAGE_KEYS.theme, "dark");
@@ -126,6 +135,14 @@ export default function AzaadPremiumFrontend() {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
+
+  useEffect(() => {
+    const tick = () => setCurrentTime(new Date());
+    const intervalId = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const greeting = useMemo(() => getGreetingByHour(currentTime.getHours()), [currentTime]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -619,7 +636,7 @@ export default function AzaadPremiumFrontend() {
           <header className="sticky top-0 z-20 border-b border-white/10 bg-black/20 px-4 py-4 backdrop-blur-2xl md:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="text-2xl font-bold tracking-tight">{view === "home" ? "Good evening" : view.charAt(0).toUpperCase() + view.slice(1)}</div>
+                <div className="text-2xl font-bold tracking-tight">{view === "home" ? greeting : view.charAt(0).toUpperCase() + view.slice(1)}</div>
                 <div className="text-sm text-zinc-400">Startup-grade music experience connected to your Railway backend.</div>
               </div>
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
