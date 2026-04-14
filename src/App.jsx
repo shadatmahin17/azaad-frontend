@@ -262,6 +262,15 @@ export default function AzaadPremiumFrontend() {
     const base = query ? filteredSongs : songs;
     return base;
   }, [filteredSongs, songs, query]);
+  const queueDuration = useMemo(
+    () => currentQueue.reduce((total, song) => total + (song.duration || 0), 0),
+    [currentQueue]
+  );
+  const upcomingQueue = useMemo(() => {
+    const currentIndex = currentQueue.findIndex((song) => song.id === currentSongId);
+    if (currentIndex < 0) return currentQueue.slice(0, 5);
+    return currentQueue.slice(currentIndex + 1, currentIndex + 6);
+  }, [currentQueue, currentSongId]);
 
   const autoplaySuggestions = useMemo(() => {
     if (!songs.length) return [];
@@ -1078,7 +1087,7 @@ export default function AzaadPremiumFrontend() {
       <AnimatePresence>
         {queueOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ x: 420 }} animate={{ x: 0 }} exit={{ x: 420 }} transition={{ type: "spring", damping: 28, stiffness: 220 }} className="absolute right-0 top-0 h-full w-full max-w-md border-l border-white/10 bg-zinc-950/95 p-5 text-white shadow-2xl shadow-black/50">
+            <motion.div initial={{ x: 420 }} animate={{ x: 0 }} exit={{ x: 420 }} transition={{ type: "spring", damping: 28, stiffness: 220 }} className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-white/10 bg-zinc-950/95 p-5 text-white shadow-2xl shadow-black/50">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <div className="text-xl font-bold">Queue</div>
@@ -1088,21 +1097,53 @@ export default function AzaadPremiumFrontend() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <ScrollArea className="h-[calc(100vh-120px)] pr-2">
-                <div className="space-y-2">
-                  {currentQueue.map((song, index) => (
-                    <button key={song.id} onClick={() => playSong(song)} className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left transition ${song.id === currentSongId ? "bg-emerald-400/10" : "hover:bg-white/5"}`}>
-                      <div className="w-6 text-xs text-zinc-500">{index + 1}</div>
-                      <img src={song.coverUrl} alt={song.title} className="h-12 w-12 rounded-2xl object-cover" />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{song.title}</div>
-                        <div className="truncate text-xs text-zinc-400">{song.artist}</div>
-                      </div>
-                      {song.id === currentSongId && <Equalizer active={isPlaying} />}
-                    </button>
-                  ))}
+              <div className="mb-4 grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-zinc-400">Tracks</div>
+                  <div className="mt-1 text-base font-semibold text-white">{currentQueue.length}</div>
                 </div>
-              </ScrollArea>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-zinc-400">Length</div>
+                  <div className="mt-1 text-base font-semibold text-white">{formatTime(queueDuration)}</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="text-zinc-400">Up next</div>
+                  <div className="mt-1 text-base font-semibold text-white">{upcomingQueue.length}</div>
+                </div>
+              </div>
+              {currentSong && (
+                <div className="mb-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-3">
+                  <div className="text-[11px] uppercase tracking-wide text-emerald-200/80">Now playing</div>
+                  <div className="mt-1 truncate font-medium">{currentSong.title}</div>
+                  <div className="truncate text-xs text-zinc-300">{currentSong.artist}</div>
+                </div>
+              )}
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <ScrollArea className="h-full pr-2">
+                  <div className="space-y-2 pb-4">
+                    {currentQueue.map((song, index) => (
+                      <button
+                        key={song.id}
+                        onClick={() => playSong(song)}
+                        className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                          song.id === currentSongId
+                            ? "border-emerald-400/30 bg-emerald-400/10"
+                            : "border-transparent hover:border-white/10 hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="w-6 text-xs text-zinc-500">{index + 1}</div>
+                        <img src={song.coverUrl} alt={song.title} className="h-12 w-12 rounded-2xl object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{song.title}</div>
+                          <div className="truncate text-xs text-zinc-400">{song.artist}</div>
+                        </div>
+                        <div className="text-[11px] text-zinc-500">{formatTime(song.duration || 0)}</div>
+                        {song.id === currentSongId && <Equalizer active={isPlaying} />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             </motion.div>
           </motion.div>
         )}
