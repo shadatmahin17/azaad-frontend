@@ -1118,30 +1118,32 @@ export default function AzaadPremiumFrontend() {
                   <div className="truncate text-xs text-zinc-300">{currentSong.artist}</div>
                 </div>
               )}
-              <ScrollArea className="min-h-0 flex-1 pr-2">
-                <div className="space-y-2">
-                  {currentQueue.map((song, index) => (
-                    <button
-                      key={song.id}
-                      onClick={() => playSong(song)}
-                      className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
-                        song.id === currentSongId
-                          ? "border-emerald-400/30 bg-emerald-400/10"
-                          : "border-transparent hover:border-white/10 hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="w-6 text-xs text-zinc-500">{index + 1}</div>
-                      <img src={song.coverUrl} alt={song.title} className="h-12 w-12 rounded-2xl object-cover" />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{song.title}</div>
-                        <div className="truncate text-xs text-zinc-400">{song.artist}</div>
-                      </div>
-                      <div className="text-[11px] text-zinc-500">{formatTime(song.duration || 0)}</div>
-                      {song.id === currentSongId && <Equalizer active={isPlaying} />}
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <ScrollArea className="h-full pr-2">
+                  <div className="space-y-2 pb-4">
+                    {currentQueue.map((song, index) => (
+                      <button
+                        key={song.id}
+                        onClick={() => playSong(song)}
+                        className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                          song.id === currentSongId
+                            ? "border-emerald-400/30 bg-emerald-400/10"
+                            : "border-transparent hover:border-white/10 hover:bg-white/5"
+                        }`}
+                      >
+                        <div className="w-6 text-xs text-zinc-500">{index + 1}</div>
+                        <img src={song.coverUrl} alt={song.title} className="h-12 w-12 rounded-2xl object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{song.title}</div>
+                          <div className="truncate text-xs text-zinc-400">{song.artist}</div>
+                        </div>
+                        <div className="text-[11px] text-zinc-500">{formatTime(song.duration || 0)}</div>
+                        {song.id === currentSongId && <Equalizer active={isPlaying} />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             </motion.div>
           </motion.div>
         )}
