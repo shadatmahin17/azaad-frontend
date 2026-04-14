@@ -1,6 +1,5 @@
 export const STORAGE_KEYS = {
   theme: "azaad_theme",
-  apiKey: "azaad_api_key",
   favorites: "azaad_favorites",
   recent: "azaad_recent",
   playlists: "azaad_playlists",
