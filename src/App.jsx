@@ -543,7 +543,7 @@ export default function AzaadPremiumFrontend() {
       <audio ref={audioRef} preload="metadata" />
 
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/30 p-5 backdrop-blur-2xl lg:block">
+        <aside className="hidden h-screen w-72 shrink-0 border-r border-white/10 bg-black/30 p-5 backdrop-blur-2xl lg:sticky lg:top-0 lg:block">
           <div className="flex items-center justify-center px-2 pb-8">
             <LogoPulse />
           </div>
