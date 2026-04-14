@@ -600,33 +600,61 @@ export default function AzaadPremiumFrontend() {
             </div>
             <ScrollArea className="h-[320px] rounded-2xl border border-white/10 bg-white/[0.03] p-2">
               <div className="space-y-2 p-1">
-                {playlists.map((playlist) => (
-                  <div key={playlist.id} className={`flex items-center gap-2 rounded-2xl border px-2 py-2 transition ${selectedPlaylist?.id === playlist.id ? "border-emerald-400/40 bg-emerald-500/10" : "border-transparent hover:border-emerald-400/20 hover:bg-white/5"}`}>
-                    <button onClick={() => setSelectedPlaylistId(playlist.id)} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1 py-1 text-left">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/20">
-                        <ListMusic className="h-5 w-5 text-emerald-300" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium text-white">{playlist.name}</div>
-                        <div className="mt-0.5 flex items-center justify-between text-xs text-zinc-400">
-                          <span>{playlist.songIds.length} tracks</span>
-                          <span>{new Date(playlist.createdAt).toLocaleDateString()}</span>
+                {playlists.map((playlist) => {
+                  const isSelected = selectedPlaylist?.id === playlist.id;
+                  return (
+                    <div
+                      key={playlist.id}
+                      className={`group rounded-2xl border p-2.5 transition ${
+                        isSelected
+                          ? "border-emerald-300/60 bg-gradient-to-r from-emerald-500/15 to-cyan-500/10 shadow-[0_10px_25px_rgba(16,185,129,0.18)]"
+                          : "border-white/5 bg-black/20 hover:border-emerald-400/30 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setSelectedPlaylistId(playlist.id)}
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 text-left"
+                        >
+                          <div
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                              isSelected
+                                ? "bg-gradient-to-br from-emerald-300/25 to-cyan-300/20 text-emerald-200"
+                                : "bg-white/[0.06] text-zinc-300 group-hover:text-emerald-200"
+                            }`}
+                          >
+                            <ListMusic className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[15px] font-semibold tracking-tight text-white">{playlist.name}</div>
+                            <div className="mt-1 flex items-center gap-2 text-[11px] text-zinc-400">
+                              <span className="rounded-full bg-white/5 px-2 py-0.5">{playlist.songIds.length} tracks</span>
+                              <span className="truncate">{new Date(playlist.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </button>
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            onClick={() => renamePlaylist(playlist.id)}
+                            className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                            title="Rename playlist"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => removePlaylist(playlist.id)}
+                            disabled={playlists.length <= 1}
+                            className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+                            title={playlists.length <= 1 ? "At least one playlist is required" : "Delete playlist"}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </div>
-                    </button>
-                    <button onClick={() => renamePlaylist(playlist.id)} className="rounded-full p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white" title="Rename playlist">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => removePlaylist(playlist.id)}
-                      disabled={playlists.length <= 1}
-                      className="rounded-full p-2 text-zinc-400 transition hover:bg-white/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
-                      title={playlists.length <= 1 ? "At least one playlist is required" : "Delete playlist"}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
           </div>
