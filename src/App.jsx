@@ -84,7 +84,6 @@ function getGreetingByHour(hour) {
 export default function AzaadPremiumFrontend() {
   const audioRef = useRef(null);
   const [theme, setTheme] = useState("dark");
-  const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
   const [query, setQuery] = useState("");
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +108,6 @@ export default function AzaadPremiumFrontend() {
 
   useEffect(() => {
     const storedTheme = readStorage(STORAGE_KEYS.theme, "dark");
-    const storedApiKey = readStorage(STORAGE_KEYS.apiKey, DEFAULT_API_KEY);
     const storedFavorites = readStorage(STORAGE_KEYS.favorites, []);
     const storedRecent = readStorage(STORAGE_KEYS.recent, []);
     const storedPlaylists = ensurePlaylists(readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")]));
@@ -117,7 +115,6 @@ export default function AzaadPremiumFrontend() {
     const storedAutoplay = readStorage(STORAGE_KEYS.autoplay, true);
 
     setTheme(storedTheme);
-    setApiKey(storedApiKey);
     setFavorites(storedFavorites);
     setRecent(storedRecent);
     setPlaylists(storedPlaylists);
@@ -126,7 +123,6 @@ export default function AzaadPremiumFrontend() {
   }, []);
 
   useEffect(() => writeStorage(STORAGE_KEYS.theme, theme), [theme]);
-  useEffect(() => writeStorage(STORAGE_KEYS.apiKey, apiKey), [apiKey]);
   useEffect(() => writeStorage(STORAGE_KEYS.favorites, favorites), [favorites]);
   useEffect(() => writeStorage(STORAGE_KEYS.recent, recent), [recent]);
   useEffect(() => writeStorage(STORAGE_KEYS.playlists, ensurePlaylists(playlists)), [playlists]);
@@ -159,7 +155,7 @@ export default function AzaadPremiumFrontend() {
       setError("");
       try {
         const res = await fetch(`${API_BASE}/api/songs`, {
-          headers: { "x-api-key": apiKey || DEFAULT_API_KEY },
+          headers: { "x-api-key": DEFAULT_API_KEY },
         });
         if (!res.ok) {
           throw new Error(`API returned ${res.status}`);
@@ -214,7 +210,7 @@ export default function AzaadPremiumFrontend() {
     return () => {
       ignore = true;
     };
-  }, [apiKey]);
+  }, []);
 
   const currentSong = useMemo(() => songs.find((song) => song.id === currentSongId) || null, [songs, currentSongId]);
 
@@ -709,12 +705,6 @@ export default function AzaadPremiumFrontend() {
                     className="rounded-2xl border-white/10 bg-white/5 pl-10 text-white placeholder:text-zinc-500"
                   />
                 </div>
-                <Input
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full rounded-2xl border-white/10 bg-white/5 text-white sm:w-40"
-                  placeholder="API key"
-                />
                 <div className="flex w-full items-center justify-between gap-3 sm:ml-auto sm:w-auto sm:justify-start">
                   <Button
                     variant="ghost"
