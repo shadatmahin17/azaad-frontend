@@ -709,12 +709,6 @@ export default function AzaadPremiumFrontend() {
                     className="rounded-2xl border-white/10 bg-white/5 pl-10 text-white placeholder:text-zinc-500"
                   />
                 </div>
-                <Input
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full rounded-2xl border-white/10 bg-white/5 text-white sm:w-40"
-                  placeholder="API key"
-                />
                 <div className="flex w-full items-center justify-between gap-3 sm:ml-auto sm:w-auto sm:justify-start">
                   <Button
                     variant="ghost"
