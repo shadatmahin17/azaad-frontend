@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Analytics } from "@vercel/analytics/react";
 import {
   Home,
   Search,
@@ -1241,6 +1242,7 @@ export default function AzaadPremiumFrontend() {
           </motion.div>
         </div>
       )}
+      <Analytics />
     </div>
   );
 }
