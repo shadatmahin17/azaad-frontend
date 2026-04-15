@@ -698,7 +698,16 @@ export default function AzaadPremiumFrontend() {
                 <section>
                   <div className="mb-4 flex items-center justify-between">
                     <div className="text-xl font-bold">Featured picks</div>
-                    <Button variant="ghost" className="rounded-full text-zinc-400 hover:text-white">See all</Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setView("search");
+                        setQuery("");
+                      }}
+                      className="rounded-full text-zinc-400 hover:text-white"
+                    >
+                      See all
+                    </Button>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                     {(featuredSongs.length ? featuredSongs : songs.slice(0, 6)).map((song) => (
