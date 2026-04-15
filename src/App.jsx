@@ -264,8 +264,8 @@ export default function AzaadPremiumFrontend() {
   );
   const upcomingQueue = useMemo(() => {
     const currentIndex = currentQueue.findIndex((song) => song.id === currentSongId);
-    if (currentIndex < 0) return currentQueue.slice(0, 5);
-    return currentQueue.slice(currentIndex + 1, currentIndex + 6);
+    if (currentIndex < 0) return currentQueue;
+    return currentQueue.slice(currentIndex + 1);
   }, [currentQueue, currentSongId]);
 
   const autoplaySuggestions = useMemo(() => {
