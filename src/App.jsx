@@ -15,6 +15,7 @@ import {
   Shuffle,
   Repeat,
   Volume2,
+  VolumeX,
   Moon,
   Sun,
   Music2,
@@ -24,6 +25,8 @@ import {
   ListMusic,
   Disc3,
   Radio,
+  RotateCcw,
+  RotateCw,
   ChevronRight,
   Pencil,
   Trash2,
@@ -96,6 +99,8 @@ export default function AzaadPremiumFrontend() {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState("off");
   const [favorites, setFavorites] = useState([]);
@@ -114,6 +119,8 @@ export default function AzaadPremiumFrontend() {
     const storedRecent = readStorage(STORAGE_KEYS.recent, []);
     const storedPlaylists = ensurePlaylists(readStorage(STORAGE_KEYS.playlists, [createPlaylist("Liked Collection")]));
     const storedVolume = readStorage(STORAGE_KEYS.volume, 0.8);
+    const storedMuted = readStorage(STORAGE_KEYS.muted, false);
+    const storedPlaybackRate = readStorage(STORAGE_KEYS.playbackRate, 1);
     const storedAutoplay = readStorage(STORAGE_KEYS.autoplay, true);
 
     setTheme(storedTheme);
@@ -121,6 +128,8 @@ export default function AzaadPremiumFrontend() {
     setRecent(storedRecent);
     setPlaylists(storedPlaylists);
     setVolume(storedVolume);
+    setIsMuted(storedMuted);
+    setPlaybackRate(storedPlaybackRate);
     setAutoplay(storedAutoplay);
   }, []);
 
@@ -129,6 +138,8 @@ export default function AzaadPremiumFrontend() {
   useEffect(() => writeStorage(STORAGE_KEYS.recent, recent), [recent]);
   useEffect(() => writeStorage(STORAGE_KEYS.playlists, ensurePlaylists(playlists)), [playlists]);
   useEffect(() => writeStorage(STORAGE_KEYS.volume, volume), [volume]);
+  useEffect(() => writeStorage(STORAGE_KEYS.muted, isMuted), [isMuted]);
+  useEffect(() => writeStorage(STORAGE_KEYS.playbackRate, playbackRate), [playbackRate]);
   useEffect(() => writeStorage(STORAGE_KEYS.autoplay, autoplay), [autoplay]);
 
   useEffect(() => {
@@ -148,6 +159,18 @@ export default function AzaadPremiumFrontend() {
     if (!audio) return;
     audio.volume = volume;
   }, [volume]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.muted = isMuted;
+  }, [isMuted]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.playbackRate = playbackRate;
+  }, [playbackRate]);
 
   useEffect(() => {
     let ignore = false;
@@ -349,6 +372,7 @@ export default function AzaadPremiumFrontend() {
   const stepSong = (direction) => {
     if (!currentQueue.length) return;
     const idx = currentQueue.findIndex((song) => song.id === currentSongId);
+    const safeIndex = idx < 0 ? 0 : idx;
     if (shuffle && currentQueue.length > 1) {
       let pick = currentQueue[Math.floor(Math.random() * currentQueue.length)];
       while (pick.id === currentSongId) {
@@ -357,7 +381,7 @@ export default function AzaadPremiumFrontend() {
       playSong(pick);
       return true;
     }
-    const nextIndex = direction === "next" ? idx + 1 : idx - 1;
+    const nextIndex = direction === "next" ? safeIndex + 1 : safeIndex - 1;
     if (nextIndex >= 0 && nextIndex < currentQueue.length) {
       playSong(currentQueue[nextIndex]);
       return true;
@@ -366,6 +390,21 @@ export default function AzaadPremiumFrontend() {
       return true;
     }
     return false;
+  };
+
+  const seekBy = (seconds) => {
+    const audio = audioRef.current;
+    if (!audio || Number.isNaN(audio.duration)) return;
+    const nextTime = Math.min(Math.max(audio.currentTime + seconds, 0), audio.duration || duration || 0);
+    audio.currentTime = nextTime;
+    setProgress(nextTime);
+  };
+
+  const cyclePlaybackRate = () => {
+    const rates = [0.75, 1, 1.25, 1.5];
+    const currentIndex = rates.findIndex((rate) => rate === playbackRate);
+    const nextIndex = currentIndex === -1 ? 1 : (currentIndex + 1) % rates.length;
+    setPlaybackRate(rates[nextIndex]);
   };
 
   const addPlaylist = () => {
@@ -413,6 +452,41 @@ export default function AzaadPremiumFrontend() {
       setSelectedPlaylistId(playlists[0].id);
     }
   }, [playlists, selectedPlaylistId]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const isTyping =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (isTyping) return;
+
+      if (event.code === "Space") {
+        event.preventDefault();
+        togglePlay();
+      } else if (event.code === "ArrowRight") {
+        event.preventDefault();
+        seekBy(10);
+      } else if (event.code === "ArrowLeft") {
+        event.preventDefault();
+        seekBy(-10);
+      } else if (event.code === "ArrowUp") {
+        event.preventDefault();
+        setVolume((prev) => Math.min(prev + 0.05, 1));
+      } else if (event.code === "ArrowDown") {
+        event.preventDefault();
+        setVolume((prev) => Math.max(prev - 0.05, 0));
+      } else if (event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        setIsMuted((value) => !value);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [duration, songs, currentSong, currentSongId]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -495,13 +569,15 @@ export default function AzaadPremiumFrontend() {
     </motion.button>
   );
 
-  const SongRow = ({ song, index }) => (
-    <div className="grid grid-cols-[32px_minmax(0,1fr)_140px_100px_120px] items-center gap-3 rounded-2xl px-3 py-3 text-sm text-zinc-300 transition hover:bg-white/[0.04] max-md:grid-cols-[28px_minmax(0,1fr)_60px]">
-      <div className="text-zinc-500">{index + 1}</div>
+  const SongRow = ({ song, index }) => {
+    const isCurrent = song.id === currentSongId;
+    return (
+    <div className={`grid grid-cols-[32px_minmax(0,1fr)_140px_100px_120px] items-center gap-3 rounded-2xl px-3 py-3 text-sm text-zinc-300 transition max-md:grid-cols-[28px_minmax(0,1fr)_44px] max-md:px-2 ${isCurrent ? "bg-emerald-500/10 ring-1 ring-emerald-400/20" : "hover:bg-white/[0.04]"}`}>
+      <div className={`text-zinc-500 ${isCurrent ? "flex items-end" : ""}`}>{isCurrent ? <Equalizer active={isPlaying} /> : index + 1}</div>
       <button onClick={() => playSong(song)} className="flex min-w-0 items-center gap-3 text-left">
         <img src={song.coverUrl} alt={song.title} className="h-11 w-11 rounded-xl object-cover" />
         <div className="min-w-0">
-          <div className="truncate font-medium text-white">{song.title}</div>
+          <div className={`truncate font-medium ${isCurrent ? "text-emerald-200" : "text-white"}`}>{song.title}</div>
           <div className="truncate text-xs text-zinc-400">{song.artist}</div>
         </div>
       </button>
@@ -517,7 +593,8 @@ export default function AzaadPremiumFrontend() {
         <Dialog>
           <DialogTrigger asChild>
             <Button size="sm" variant="ghost" className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white">
-              <Plus className="mr-1 h-4 w-4" /> Add
+              <Plus className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">Add</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="border-white/10 bg-zinc-950 text-white">
@@ -540,7 +617,8 @@ export default function AzaadPremiumFrontend() {
         </Dialog>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className={`min-h-screen ${theme === "dark" ? "dark bg-black text-white" : "bg-zinc-100 text-zinc-900"}`}>
@@ -690,11 +768,11 @@ export default function AzaadPremiumFrontend() {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col pb-36">
+        <main className="flex min-w-0 flex-1 flex-col pb-48 md:pb-40">
           <header className="sticky top-0 z-20 border-b border-white/10 bg-black/20 px-4 py-4 backdrop-blur-2xl md:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="text-2xl font-bold tracking-tight">{view === "home" ? greeting : view.charAt(0).toUpperCase() + view.slice(1)}</div>
+                <div className="text-xl font-bold tracking-tight sm:text-2xl">{view === "home" ? greeting : view.charAt(0).toUpperCase() + view.slice(1)}</div>
                 <div className="text-sm text-zinc-400">Startup-grade music experience connected to your Railway backend.</div>
               </div>
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
@@ -1150,29 +1228,35 @@ export default function AzaadPremiumFrontend() {
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/75 px-3 py-3 backdrop-blur-2xl sm:px-4 md:px-6">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/85 px-2 py-2 backdrop-blur-2xl sm:px-4 sm:py-3 md:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3 lg:w-[28%]">
-            <img src={currentSong?.coverUrl || DEFAULT_COVER} alt={currentSong?.title || "No track"} className={`h-14 w-14 rounded-2xl object-cover shadow-xl ${isPlaying ? "ring-2 ring-emerald-400/40" : ""}`} />
+            <img src={currentSong?.coverUrl || DEFAULT_COVER} alt={currentSong?.title || "No track"} className={`h-12 w-12 rounded-xl object-cover shadow-xl sm:h-14 sm:w-14 sm:rounded-2xl ${isPlaying ? "ring-2 ring-emerald-400/40" : ""}`} />
             <div className="min-w-0">
-              <div className="truncate font-semibold text-white">{currentSong?.title || "Nothing playing"}</div>
-              <div className="truncate text-sm text-zinc-400">{currentSong?.artist || "Choose a track from the catalog"}</div>
+              <div className="truncate text-sm font-semibold text-white sm:text-base">{currentSong?.title || "Nothing playing"}</div>
+              <div className="truncate text-xs text-zinc-400 sm:text-sm">{currentSong?.artist || "Choose a track from the catalog"}</div>
             </div>
-            <button onClick={() => currentSong && toggleFavorite(currentSong.id)} className={`rounded-full p-2 ${currentSong && favorites.includes(currentSong.id) ? "text-emerald-300" : "text-zinc-500 hover:text-white"}`}>
+            <button onClick={() => currentSong && toggleFavorite(currentSong.id)} className={`hidden rounded-full p-2 sm:inline-flex ${currentSong && favorites.includes(currentSong.id) ? "text-emerald-300" : "text-zinc-500 hover:text-white"}`}>
               <Heart className={`h-4 w-4 ${currentSong && favorites.includes(currentSong.id) ? "fill-current" : ""}`} />
             </button>
           </div>
 
           <div className="flex w-full flex-1 flex-col items-center gap-3 lg:max-w-2xl">
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 md:gap-4">
-              <button onClick={() => setShuffle((s) => !s)} className={`rounded-full p-2 ${shuffle ? "text-emerald-300" : "text-zinc-400 hover:text-white"}`}>
+            <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:gap-4">
+              <button onClick={() => setShuffle((s) => !s)} className={`rounded-full p-2 max-sm:hidden ${shuffle ? "text-emerald-300" : "text-zinc-400 hover:text-white"}`}>
                 <Shuffle className="h-4 w-4" />
               </button>
               <button onClick={() => stepSong("prev")} className="rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white">
                 <SkipBack className="h-5 w-5 fill-current" />
               </button>
+              <button onClick={() => seekBy(-10)} className="hidden rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white sm:inline-flex" title="Back 10 seconds">
+                <RotateCcw className="h-4 w-4" />
+              </button>
               <button onClick={togglePlay} className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-xl transition hover:scale-105">
                 {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
+              </button>
+              <button onClick={() => seekBy(10)} className="hidden rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white sm:inline-flex" title="Forward 10 seconds">
+                <RotateCw className="h-4 w-4" />
               </button>
               <button onClick={() => stepSong("next")} className="rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white">
                 <SkipForward className="h-5 w-5 fill-current" />
@@ -1190,6 +1274,25 @@ export default function AzaadPremiumFrontend() {
               >
                 <Radio className="h-4 w-4" />
               </button>
+              <button
+                onClick={cyclePlaybackRate}
+                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-200 md:hidden"
+                title="Cycle speed"
+              >
+                {playbackRate}x
+              </button>
+              <select
+                value={playbackRate}
+                onChange={(event) => setPlaybackRate(Number(event.target.value))}
+                className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-200 outline-none ring-emerald-300 transition focus:ring-1 md:block"
+                title="Playback speed"
+              >
+                {[0.75, 1, 1.25, 1.5].map((rate) => (
+                  <option key={rate} value={rate} className="bg-zinc-900">
+                    {rate}x
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex w-full items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-zinc-500">
               <span>{formatTime(progress)}</span>
@@ -1208,15 +1311,25 @@ export default function AzaadPremiumFrontend() {
           <div className="hidden items-center justify-end gap-3 sm:flex lg:w-[28%]">
             <Equalizer active={isPlaying} />
             <Disc3 className={`h-4 w-4 ${isPlaying ? "animate-spin text-emerald-300" : "text-zinc-500"}`} />
-            <Volume2 className="h-4 w-4 text-zinc-400" />
+            <button onClick={() => setIsMuted((value) => !value)} className="rounded-full p-1 text-zinc-400 hover:bg-white/10 hover:text-white" title={isMuted ? "Unmute" : "Mute"}>
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </button>
             <div className="w-24 md:w-28">
-              <Slider className="azaad-slider azaad-slider--volume" value={[volume * 100]} onValueChange={(value) => setVolume(value[0] / 100)} />
+              <Slider
+                className="azaad-slider azaad-slider--volume"
+                value={[volume * 100]}
+                onValueChange={(value) => {
+                  const next = value[0] / 100;
+                  setVolume(next);
+                  if (isMuted && next > 0) setIsMuted(false);
+                }}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <nav className="fixed bottom-[92px] left-2 right-2 z-20 sm:bottom-24 sm:left-4 sm:right-4 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-2 backdrop-blur-2xl lg:hidden">
+      <nav className="fixed bottom-[84px] left-2 right-2 z-20 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-1.5 backdrop-blur-2xl sm:bottom-24 sm:left-4 sm:right-4 sm:p-2 lg:hidden">
         {[
           ["home", Home],
           ["search", Search],
