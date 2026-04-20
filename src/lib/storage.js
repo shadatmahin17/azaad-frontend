@@ -4,6 +4,8 @@ export const STORAGE_KEYS = {
   recent: "azaad_recent",
   playlists: "azaad_playlists",
   volume: "azaad_volume",
+  muted: "azaad_muted",
+  playbackRate: "azaad_playback_rate",
   autoplay: "azaad_autoplay",
 };
 
