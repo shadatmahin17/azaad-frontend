@@ -400,6 +400,13 @@ export default function AzaadPremiumFrontend() {
     setProgress(nextTime);
   };
 
+  const cyclePlaybackRate = () => {
+    const rates = [0.75, 1, 1.25, 1.5];
+    const currentIndex = rates.findIndex((rate) => rate === playbackRate);
+    const nextIndex = currentIndex === -1 ? 1 : (currentIndex + 1) % rates.length;
+    setPlaybackRate(rates[nextIndex]);
+  };
+
   const addPlaylist = () => {
     if (!newPlaylistName.trim()) return false;
     const created = createPlaylist(newPlaylistName.trim());
@@ -565,7 +572,7 @@ export default function AzaadPremiumFrontend() {
   const SongRow = ({ song, index }) => {
     const isCurrent = song.id === currentSongId;
     return (
-    <div className={`grid grid-cols-[32px_minmax(0,1fr)_140px_100px_120px] items-center gap-3 rounded-2xl px-3 py-3 text-sm text-zinc-300 transition max-md:grid-cols-[28px_minmax(0,1fr)_60px] ${isCurrent ? "bg-emerald-500/10 ring-1 ring-emerald-400/20" : "hover:bg-white/[0.04]"}`}>
+    <div className={`grid grid-cols-[32px_minmax(0,1fr)_140px_100px_120px] items-center gap-3 rounded-2xl px-3 py-3 text-sm text-zinc-300 transition max-md:grid-cols-[28px_minmax(0,1fr)_44px] max-md:px-2 ${isCurrent ? "bg-emerald-500/10 ring-1 ring-emerald-400/20" : "hover:bg-white/[0.04]"}`}>
       <div className={`text-zinc-500 ${isCurrent ? "flex items-end" : ""}`}>{isCurrent ? <Equalizer active={isPlaying} /> : index + 1}</div>
       <button onClick={() => playSong(song)} className="flex min-w-0 items-center gap-3 text-left">
         <img src={song.coverUrl} alt={song.title} className="h-11 w-11 rounded-xl object-cover" />
@@ -586,7 +593,8 @@ export default function AzaadPremiumFrontend() {
         <Dialog>
           <DialogTrigger asChild>
             <Button size="sm" variant="ghost" className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white">
-              <Plus className="mr-1 h-4 w-4" /> Add
+              <Plus className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">Add</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="border-white/10 bg-zinc-950 text-white">
@@ -760,11 +768,11 @@ export default function AzaadPremiumFrontend() {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col pb-36">
+        <main className="flex min-w-0 flex-1 flex-col pb-48 md:pb-40">
           <header className="sticky top-0 z-20 border-b border-white/10 bg-black/20 px-4 py-4 backdrop-blur-2xl md:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="text-2xl font-bold tracking-tight">{view === "home" ? greeting : view.charAt(0).toUpperCase() + view.slice(1)}</div>
+                <div className="text-xl font-bold tracking-tight sm:text-2xl">{view === "home" ? greeting : view.charAt(0).toUpperCase() + view.slice(1)}</div>
                 <div className="text-sm text-zinc-400">Startup-grade music experience connected to your Railway backend.</div>
               </div>
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
@@ -1220,34 +1228,34 @@ export default function AzaadPremiumFrontend() {
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/75 px-3 py-3 backdrop-blur-2xl sm:px-4 md:px-6">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/85 px-2 py-2 backdrop-blur-2xl sm:px-4 sm:py-3 md:px-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3 lg:w-[28%]">
-            <img src={currentSong?.coverUrl || DEFAULT_COVER} alt={currentSong?.title || "No track"} className={`h-14 w-14 rounded-2xl object-cover shadow-xl ${isPlaying ? "ring-2 ring-emerald-400/40" : ""}`} />
+            <img src={currentSong?.coverUrl || DEFAULT_COVER} alt={currentSong?.title || "No track"} className={`h-12 w-12 rounded-xl object-cover shadow-xl sm:h-14 sm:w-14 sm:rounded-2xl ${isPlaying ? "ring-2 ring-emerald-400/40" : ""}`} />
             <div className="min-w-0">
-              <div className="truncate font-semibold text-white">{currentSong?.title || "Nothing playing"}</div>
-              <div className="truncate text-sm text-zinc-400">{currentSong?.artist || "Choose a track from the catalog"}</div>
+              <div className="truncate text-sm font-semibold text-white sm:text-base">{currentSong?.title || "Nothing playing"}</div>
+              <div className="truncate text-xs text-zinc-400 sm:text-sm">{currentSong?.artist || "Choose a track from the catalog"}</div>
             </div>
-            <button onClick={() => currentSong && toggleFavorite(currentSong.id)} className={`rounded-full p-2 ${currentSong && favorites.includes(currentSong.id) ? "text-emerald-300" : "text-zinc-500 hover:text-white"}`}>
+            <button onClick={() => currentSong && toggleFavorite(currentSong.id)} className={`hidden rounded-full p-2 sm:inline-flex ${currentSong && favorites.includes(currentSong.id) ? "text-emerald-300" : "text-zinc-500 hover:text-white"}`}>
               <Heart className={`h-4 w-4 ${currentSong && favorites.includes(currentSong.id) ? "fill-current" : ""}`} />
             </button>
           </div>
 
           <div className="flex w-full flex-1 flex-col items-center gap-3 lg:max-w-2xl">
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 md:gap-4">
-              <button onClick={() => setShuffle((s) => !s)} className={`rounded-full p-2 ${shuffle ? "text-emerald-300" : "text-zinc-400 hover:text-white"}`}>
+            <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 md:gap-4">
+              <button onClick={() => setShuffle((s) => !s)} className={`rounded-full p-2 max-sm:hidden ${shuffle ? "text-emerald-300" : "text-zinc-400 hover:text-white"}`}>
                 <Shuffle className="h-4 w-4" />
               </button>
               <button onClick={() => stepSong("prev")} className="rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white">
                 <SkipBack className="h-5 w-5 fill-current" />
               </button>
-              <button onClick={() => seekBy(-10)} className="rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white" title="Back 10 seconds">
+              <button onClick={() => seekBy(-10)} className="hidden rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white sm:inline-flex" title="Back 10 seconds">
                 <RotateCcw className="h-4 w-4" />
               </button>
               <button onClick={togglePlay} className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-xl transition hover:scale-105">
                 {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
               </button>
-              <button onClick={() => seekBy(10)} className="rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white" title="Forward 10 seconds">
+              <button onClick={() => seekBy(10)} className="hidden rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white sm:inline-flex" title="Forward 10 seconds">
                 <RotateCw className="h-4 w-4" />
               </button>
               <button onClick={() => stepSong("next")} className="rounded-full p-2 text-zinc-300 hover:bg-white/10 hover:text-white">
@@ -1266,10 +1274,17 @@ export default function AzaadPremiumFrontend() {
               >
                 <Radio className="h-4 w-4" />
               </button>
+              <button
+                onClick={cyclePlaybackRate}
+                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-200 md:hidden"
+                title="Cycle speed"
+              >
+                {playbackRate}x
+              </button>
               <select
                 value={playbackRate}
                 onChange={(event) => setPlaybackRate(Number(event.target.value))}
-                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-200 outline-none ring-emerald-300 transition focus:ring-1"
+                className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-zinc-200 outline-none ring-emerald-300 transition focus:ring-1 md:block"
                 title="Playback speed"
               >
                 {[0.75, 1, 1.25, 1.5].map((rate) => (
@@ -1314,7 +1329,7 @@ export default function AzaadPremiumFrontend() {
         </div>
       </div>
 
-      <nav className="fixed bottom-[92px] left-2 right-2 z-20 sm:bottom-24 sm:left-4 sm:right-4 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-2 backdrop-blur-2xl lg:hidden">
+      <nav className="fixed bottom-[84px] left-2 right-2 z-20 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-white/10 bg-zinc-950/90 p-1.5 backdrop-blur-2xl sm:bottom-24 sm:left-4 sm:right-4 sm:p-2 lg:hidden">
         {[
           ["home", Home],
           ["search", Search],
