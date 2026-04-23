@@ -1,5 +1,5 @@
 export const DEFAULT_COVER =
-  "https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/Background.jpg";
+  "https://mahin-cloud-storage.s3.ap-southeast-1.amazonaws.com/img/Audio-controller.png";
 
 export function formatTime(seconds) {
   if (!Number.isFinite(seconds)) return "0:00";
